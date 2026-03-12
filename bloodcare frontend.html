@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blood Donation Management System</title>
+
+<!-- AOS Animation CSS -->
+<link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+    scroll-behavior:smooth;
+}
+
+body{
+    background:#f9f9f9;
+    color:#333;
+}
+
+/* Floating Blood Drops */
+.blood-drop{
+    position:fixed;
+    width:20px;
+    height:20px;
+    background:red;
+    border-radius:50%;
+    opacity:0.5;
+    animation: float 12s infinite linear;
+    z-index:-1;
+}
+.blood-drop:nth-child(1){ left:10%; animation-delay:0s; }
+.blood-drop:nth-child(2){ left:50%; animation-delay:4s; }
+.blood-drop:nth-child(3){ left:80%; animation-delay:8s; }
+
+@keyframes float{
+    0%{ top:-10%; transform:translateX(0); }
+    50%{ transform:translateX(40px); }
+    100%{ top:110%; transform:translateX(-40px); }
+}
+
+/* Navbar */
+nav{
+    position:fixed;
+    width:100%;
+    padding:15px 8%;
+    background:rgba(255,0,0,0.95);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    z-index:1000;
+}
+nav h2{ color:#fff; }
+nav ul{ list-style:none; display:flex; }
+nav ul li{ margin-left:25px; }
+nav ul li a{
+    color:white;
+    text-decoration:none;
+    font-weight:500;
+}
+nav ul li a:hover{ color:black; }
+
+/* Hero */
+.hero{
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    background:linear-gradient(to right,#ff4d4d,#ff1a1a);
+    color:white;
+    flex-direction:column;
+}
+.hero h1{ font-size:50px; }
+.hero p{ margin:20px 0; }
+.hero button{
+    padding:12px 25px;
+    border:none;
+    background:white;
+    color:red;
+    font-weight:600;
+    border-radius:25px;
+    cursor:pointer;
+}
+
+/* Sections */
+section{ padding:90px 8%; }
+.section-title{
+    text-align:center;
+    margin-bottom:40px;
+    font-size:30px;
+    color:red;
+}
+
+/* Cards */
+.cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:20px;
+}
+.card{
+    padding:25px;
+    border-radius:10px;
+    background:white;
+    box-shadow:0 5px 15px rgba(0,0,0,0.1);
+    transition:0.4s;
+}
+.card:hover{
+    transform:translateY(-10px);
+}
+.card{
+position:relative;
+}
+
+.delete-btn{
+position:absolute;
+top:10px;
+right:10px;
+background:red;
+color:white;
+border:none;
+padding:5px 10px;
+display:none;
+cursor:pointer;
+}
+
+.card:hover .delete-btn{
+display:block;
+}
+
+/* Form */
+form{
+    max-width:600px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    border-radius:10px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+form input, form select{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border-radius:5px;
+    border:1px solid #ccc;
+}
+form button{
+    width:100%;
+    padding:12px;
+    background:red;
+    border:none;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+form button:hover{
+    background:black;
+}
+
+/* Footer */
+footer{
+    background:#111;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Floating Blood Drops -->
+<div class="blood-drop"></div>
+<div class="blood-drop"></div>
+<div class="blood-drop"></div>
+
+<!-- Navbar -->
+<nav>
+    <h2>BloodCare</h2>
+    <ul>
+        <li><a href="#home">Home</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#donor">Become Donor</a></li>
+        <li><a href="#contact">Contact</a></li>
+    </ul>
+</nav>
+
+<!-- Hero -->
+<section class="hero" id="home">
+    <h1>Donate Blood, Save Lives ❤️</h1>
+    <p>Online Blood Donation Management System</p>
+    <button onclick="scrollToSection()">Become a Donor</button>
+</section>
+
+<!-- Stats -->
+<section>
+    <h2 class="section-title">Our Impact</h2>
+    <div class="cards">
+        <div class="card">
+            <h2 id="donorCount">0</h2>
+            <p>Registered Donors</p>
+        </div>
+        <div class="card">
+            <h2 id="livesSaved">0</h2>
+            <p>Lives Saved</p>
+        </div>
+    </div>
+</section>
+
+<!-- About -->
+<section id="about">
+    <h2 class="section-title" data-aos="zoom-in">About Us</h2>
+    <div class="cards">
+        <div class="card">
+            <h3>Our Mission</h3>
+            <p>To create a reliable online platform connecting blood donors with recipients instantly.</p>
+        </div>
+        <div class="card">
+            <h3>Why Donate?</h3>
+            <p>One donation can save up to three lives and helps hospitals maintain emergency blood supply.</p>
+        </div>
+        <div class="card">
+            <h3>Secure System</h3>
+            <p>Safe registration, organized data management and instant donor search facility.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Services -->
+<section id="services">
+    <h2 class="section-title" data-aos="fade-up">Our Services</h2>
+    <div class="cards">
+        <div class="card">
+            <h3>Donor Registration</h3>
+            <p>Register online and become a life saver.</p>
+        </div>
+        <div class="card">
+            <h3>Search Blood</h3>
+            <p>Find donors by blood group and location.</p>
+        </div>
+        <div class="card">
+            <h3>Blood Bank Records</h3>
+            <p>Maintain and manage blood stock efficiently.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Donor Form -->
+<section id="donor">
+    <h2 class="section-title">Become a Donor</h2>
+    <form onsubmit="return registerDonor(event)">
+        <input type="text" placeholder="Full Name" required>
+        <input type="email" placeholder="Email Address" required>
+        <input type="text" placeholder="Mobile Number" required>
+        <select required>
+            <option value="">Select Blood Group</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>O+</option><option>O-</option>
+            <option>AB+</option><option>AB-</option>
+        </select>
+        <input type="text" placeholder="City" required>
+        <button type="submit">Register Now</button>
+    </form>
+</section>
+<section>
+    <h2 class="section-title">Search Donor</h2>
+    <div class="cards">
+        <div class="card">
+            <select id="searchBlood">
+                <option value="">Select Blood Group</option>
+                <option>A+</option><option>A-</option>
+                <option>B+</option><option>B-</option>
+                <option>O+</option><option>O-</option>
+                <option>AB+</option><option>AB-</option>
+            </select>
+            <input type="text" id="searchCity" placeholder="Enter City">
+            <button onclick="searchDonor()">Search</button>
+        </div>
+    </div>
+</section>
+
+<!-- Registered Donors -->
+<section id="view-donors">
+    <h2 class="section-title">Registered Donors</h2>
+    <div id="donorList" class="cards"></div>
+</section>
+
+<!-- Contact -->
+<section id="contact">
+    <h2 class="section-title">Contact Us</h2>
+    <div class="cards">
+        <div class="card">
+            <h3>Email</h3>
+            <p>support@bloodcare.com</p>
+        </div>
+        <div class="card">
+            <h3>Phone</h3>
+            <p>+91 9876543210</p>
+        </div>
+        <div class="card">
+            <h3>Location</h3>
+            <p>Your City, Country</p>
+        </div>
+    </div>
+</section>
+
+<footer>
+    © 2026 Blood Donation Management System | Designed for Synopsis Project
+</footer>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script>
+AOS.init({ duration:1200 });
+
+function scrollToSection(){
+    document.getElementById("donor").scrollIntoView({behavior:"smooth"});
+}
+
+// Register Donor (Backend)
+async function registerDonor(e){
+    e.preventDefault();
+
+    let inputs=document.querySelectorAll("input, select");
+
+    let donor={
+        name:inputs[0].value,
+        email:inputs[1].value,
+        mobile:inputs[2].value,
+        blood:inputs[3].value,
+        city:inputs[4].value
+    };
+
+    await fetch("http://localhost:5000/api/donor",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(donor)
+    });
+
+    alert("Donor Registered Successfully!");
+    displayDonors();
+    document.querySelector("form").reset();
+}
+
+// Display All Donors
+async function displayDonors(){
+    let res = await fetch("http://localhost:5000/api/donors");
+    let donors = await res.json();
+
+    let donorList=document.getElementById("donorList");
+    donorList.innerHTML="";
+
+    donors.forEach(d=>{
+        donorList.innerHTML+=`
+        <div class="card">
+            <h3>${d.name}</h3>
+            <p><strong>Blood:</strong> ${d.blood}</p>
+            <p><strong>City:</strong> ${d.city}</p>
+            <p><strong>Mobile:</strong> ${d.mobile}</p>
+
+             <button class="delete-btn" onclick="deleteDonor('${d._id}')">Delete</button>
+        </div>`;
+    });
+}
+
+// Search Donor
+async function searchDonor() {
+    let blood = document.getElementById("searchBlood").value;
+    let city = document.getElementById("searchCity").value;
+
+    // encode URL parameters (important for B+, A+ etc.)
+    let res = await fetch(`http://localhost:5000/api/donor/search?blood=${encodeURIComponent(blood)}&city=${encodeURIComponent(city)}`);
+    
+    let donors = await res.json();
+
+    let donorList = document.getElementById("donorList");
+    donorList.innerHTML = "";
+
+    if (donors.length === 0) {
+        donorList.innerHTML = "<p>No donors found.</p>";
+        return;
+    }
+
+    donors.forEach(d => {
+        donorList.innerHTML += `
+        <div class="card">
+            <h3>${d.name}</h3>
+            <p><strong>Blood:</strong> ${d.blood}</p>
+            <p><strong>City:</strong> ${d.city}</p>
+            <p><strong>Mobile:</strong> ${d.mobile}</p>
+        </div>`;
+    });
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+    displayDonors();
+});
+async function loadDonorCount() {
+    try {
+        let res = await fetch("http://localhost:5000/api/donors");
+        let donors = await res.json();
+
+        document.getElementById("donorCount").innerText = donors.length;
+    } catch (error) {
+        console.log("Error loading donor count:", error);
+    }
+}
+
+async function deleteDonor(id) {
+
+    let confirmDelete = confirm("Are you sure you want to delete this donor?");
+
+    if(confirmDelete){
+        await fetch(`http://localhost:5000/api/donor/${id}`, {
+            method: "DELETE"
+        });
+
+        alert("Donor Deleted Successfully");
+
+        displayDonors();
+        loadDonorCount();
+    }
+}
+
+// page load hote hi run karega
+window.onload = loadDonorCount;
+</script>
+
+</body>
+</html>
