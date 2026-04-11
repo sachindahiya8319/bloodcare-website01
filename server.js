@@ -8,10 +8,10 @@ app.get("/", (req, res) => {
   res.send("Blood Care Backend Running");
 });
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect("mongodb://127.0.0.1:27017/bloodcare")
+mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
 
@@ -29,9 +29,13 @@ const Donor = mongoose.model("Donor", donorSchema);
 
 // Register Donor API
 app.post("/api/donor", async (req, res) => {
-    const donor = new Donor(req.body);
-    await donor.save();
-    res.json({ message: "Donor Registered Successfully" });
+    try {
+        const donor = new Donor(req.body);
+        await donor.save();
+        res.json({ message: "Donor Registered Successfully" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Search Donor API
@@ -55,7 +59,6 @@ app.get("/api/donors", async (req, res) => {
     res.json(donors);
 });
 
-app.listen(5000, () => console.log("Server running on port 5000"));
 // Delete Donor API
 app.delete("/api/donor/:id", async (req, res) => {
     try {
@@ -69,4 +72,10 @@ app.delete("/api/donor/:id", async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
