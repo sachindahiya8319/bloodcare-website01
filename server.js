@@ -21,6 +21,7 @@ const donorSchema = new mongoose.Schema({
     email: String,
     mobile: String,
     blood: String,
+    state: String,
     city: String
 });
 
@@ -35,12 +36,15 @@ app.post("/api/donor", async (req, res) => {
 
 // Search Donor API
 app.get("/api/donor/search", async (req, res) => {
-    const { blood, city } = req.query;
+    const { blood, state, city } = req.query;
 
-    const donors = await Donor.find({
-        blood: blood,
-        city: city
-    });
+    let filter = {};
+
+    if (blood) filter.blood = blood;
+    if (state) filter.state = state;
+    if (city) filter.city = city;
+
+    const donors = await Donor.find(filter);
 
     res.json(donors);
 });

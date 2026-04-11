@@ -70,12 +70,19 @@ nav ul li a:hover{ color:black; }
 
 /* Hero */
 .hero{
-    height:100vh;
+    height:120vh;
     display:flex;
     justify-content:center;
     align-items:center;
     text-align:center;
-    background:linear-gradient(to right,#ff4d4d,#ff1a1a);
+
+    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+                url('images/blood.png');
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
     color:white;
     flex-direction:column;
 }
@@ -104,7 +111,7 @@ section{ padding:90px 8%; }
 .cards{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-    gap:20px;
+    gap: 20px;
 }
 .card{
     padding:25px;
@@ -127,6 +134,7 @@ right:10px;
 background:red;
 color:white;
 border:none;
+border-radius: 25px;
 padding:5px 10px;
 display:none;
 cursor:pointer;
@@ -275,17 +283,23 @@ footer{
 <section id="donor">
     <h2 class="section-title">Become a Donor</h2>
     <form onsubmit="return registerDonor(event)">
-        <input type="text" placeholder="Full Name" required>
-        <input type="email" placeholder="Email Address" required>
-        <input type="text" placeholder="Mobile Number" required>
-        <select required>
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="email" id="email" placeholder="Email Address" required>
+        <input type="text" id="mobile" placeholder="Mobile Number" required>
+        <select id="blood" required>
             <option value="">Select Blood Group</option>
             <option>A+</option><option>A-</option>
             <option>B+</option><option>B-</option>
             <option>O+</option><option>O-</option>
             <option>AB+</option><option>AB-</option>
         </select>
-        <input type="text" placeholder="City" required>
+        <select id="state" required>
+    <option value="">Select State</option>
+</select>
+
+<select id="city" required>
+    <option value="">Select City</option>
+</select>
         <button type="submit">Register Now</button>
     </form>
 </section>
@@ -300,7 +314,14 @@ footer{
                 <option>O+</option><option>O-</option>
                 <option>AB+</option><option>AB-</option>
             </select>
-            <input type="text" id="searchCity" placeholder="Enter City">
+            <select id="searchState">
+    <option value="">Select State</option>
+</select>
+
+<select id="searchCity">
+    <option value="">Select City</option>
+</select>
+           
             <button onclick="searchDonor()">Search</button>
         </div>
     </div>
@@ -350,13 +371,14 @@ async function registerDonor(e){
 
     let inputs=document.querySelectorAll("input, select");
 
-    let donor={
-        name:inputs[0].value,
-        email:inputs[1].value,
-        mobile:inputs[2].value,
-        blood:inputs[3].value,
-        city:inputs[4].value
-    };
+    let donor = {
+    name: document.getElementById("name").value,
+    email: document.getElementById("email").value,
+    mobile: document.getElementById("mobile").value,
+    blood: document.getElementById("blood").value,
+    state: document.getElementById("state").value,   // ✅ ADD THIS
+    city: document.getElementById("city").value
+};
 
     await fetch("http://localhost:5000/api/donor",{
         method:"POST",
@@ -382,6 +404,7 @@ async function displayDonors(){
         <div class="card">
             <h3>${d.name}</h3>
             <p><strong>Blood:</strong> ${d.blood}</p>
+            <p><strong>State:</strong> ${d.state}</p>
             <p><strong>City:</strong> ${d.city}</p>
             <p><strong>Mobile:</strong> ${d.mobile}</p>
 
@@ -394,9 +417,10 @@ async function displayDonors(){
 async function searchDonor() {
     let blood = document.getElementById("searchBlood").value;
     let city = document.getElementById("searchCity").value;
+    let state = document.getElementById("searchState").value;
 
     // encode URL parameters (important for B+, A+ etc.)
-    let res = await fetch(`http://localhost:5000/api/donor/search?blood=${encodeURIComponent(blood)}&city=${encodeURIComponent(city)}`);
+    let res = await fetch(`http://localhost:5000/api/donor/search?blood=${encodeURIComponent(blood)}&state=${encodeURIComponent(state)}&city=${encodeURIComponent(city)}`);
     
     let donors = await res.json();
 
@@ -413,6 +437,7 @@ async function searchDonor() {
         <div class="card">
             <h3>${d.name}</h3>
             <p><strong>Blood:</strong> ${d.blood}</p>
+            <p><strong>State:</strong> ${d.state}</p>
             <p><strong>City:</strong> ${d.city}</p>
             <p><strong>Mobile:</strong> ${d.mobile}</p>
         </div>`;
@@ -451,6 +476,142 @@ async function deleteDonor(id) {
 
 // page load hote hi run karega
 window.onload = loadDonorCount;
+
+// ✅ YAHAN ADD KARO (last me)
+async function loadStates() {
+    let res = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: "India" })
+    });
+
+    let data = await res.json();
+    let states = data.data.states;
+
+    let stateDropdown = document.getElementById("state");
+
+    states.forEach(s => {
+        let option = document.createElement("option");
+        option.value = s.name;
+        option.text = s.name;
+        stateDropdown.add(option);
+    });
+}
+
+document.getElementById("searchState").addEventListener("change", loadSearchCities);
+
+async function loadSearchCities() {
+    let state = document.getElementById("searchState").value;
+    let cityDropdown = document.getElementById("searchCity");
+
+    cityDropdown.innerHTML = "<option>Loading...</option>";
+
+    let res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            country: "India",
+            state: state
+        })
+    });
+
+    let data = await res.json();
+    let cities = data.data;
+
+    cityDropdown.innerHTML = "<option>Select City</option>";
+
+    cities.forEach(city => {
+        let option = document.createElement("option");
+        option.value = city;
+        option.text = city;
+        cityDropdown.add(option);
+    });
+}
+
+// page load pe run hoga
+loadStates();
+document.getElementById("state").addEventListener("change", loadRegisterCities);
+
+async function loadRegisterCities() {
+    let state = document.getElementById("state").value;
+    let cityDropdown = document.getElementById("city");
+
+    cityDropdown.innerHTML = "<option>Loading...</option>";
+
+    let res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            country: "India",
+            state: state
+        })
+    });
+
+    let data = await res.json();
+    let cities = data.data;
+
+    cityDropdown.innerHTML = "<option>Select City</option>";
+
+    cities.forEach(city => {
+        let option = document.createElement("option");
+        option.value = city;
+        option.text = city;
+        cityDropdown.add(option);
+    });
+}
+async function loadSearchCities() {
+    let state = document.getElementById("searchState").value;
+    let cityDropdown = document.getElementById("searchCity");
+
+    cityDropdown.innerHTML = "<option>Loading...</option>";
+
+    let res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            country: "India",
+            state: state
+        })
+    });
+
+    let data = await res.json();
+    let cities = data.data;
+
+    cityDropdown.innerHTML = "<option>Select City</option>";
+
+    cities.forEach(city => {
+        let option = document.createElement("option");
+        option.value = city;
+        option.text = city;
+        cityDropdown.add(option);
+    });
+}
+async function loadSearchStates() {
+    let res = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: "India" })
+    });
+
+    let data = await res.json();
+    let states = data.data.states;
+
+    let dropdown = document.getElementById("searchState");
+
+    states.forEach(s => {
+        let option = document.createElement("option");
+        option.value = s.name;
+        option.text = s.name;
+        dropdown.add(option);
+    });
+}
+document.addEventListener("DOMContentLoaded", () => {
+    loadSearchStates();
+
+    document.getElementById("searchState")
+        .addEventListener("change", loadSearchCities);
+});
+
 </script>
 
 </body>

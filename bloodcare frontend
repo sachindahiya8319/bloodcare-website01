@@ -70,12 +70,19 @@ nav ul li a:hover{ color:black; }
 
 /* Hero */
 .hero{
-    height:100vh;
+    height:120vh;
     display:flex;
     justify-content:center;
     align-items:center;
     text-align:center;
-    background:linear-gradient(to right,#ff4d4d,#ff1a1a);
+
+    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+                url('images/blood.png');
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
     color:white;
     flex-direction:column;
 }
@@ -285,7 +292,13 @@ footer{
             <option>O+</option><option>O-</option>
             <option>AB+</option><option>AB-</option>
         </select>
-        <input type="text" placeholder="City" required>
+        <select id="state" required>
+    <option value="">Select State</option>
+</select>
+
+<select id="city" required>
+    <option value="">Select City</option>
+</select>
         <button type="submit">Register Now</button>
     </form>
 </section>
@@ -451,6 +464,61 @@ async function deleteDonor(id) {
 
 // page load hote hi run karega
 window.onload = loadDonorCount;
+
+// ✅ YAHAN ADD KARO (last me)
+async function loadStates() {
+    let res = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: "India" })
+    });
+
+    let data = await res.json();
+    let states = data.data.states;
+
+    let stateDropdown = document.getElementById("state");
+
+    states.forEach(s => {
+        let option = document.createElement("option");
+        option.value = s.name;
+        option.text = s.name;
+        stateDropdown.add(option);
+    });
+}
+
+document.getElementById("state").addEventListener("change", loadCities);
+
+async function loadCities() {
+    let state = document.getElementById("state").value;
+    let cityDropdown = document.getElementById("city");
+
+    cityDropdown.innerHTML = "<option>Loading...</option>";
+
+    let res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            country: "India",
+            state: state
+        })
+    });
+
+    let data = await res.json();
+    let cities = data.data;
+
+    cityDropdown.innerHTML = "<option>Select City</option>";
+
+    cities.forEach(city => {
+        let option = document.createElement("option");
+        option.value = city;
+        option.text = city;
+        cityDropdown.add(option);
+    });
+}
+
+// page load pe run hoga
+loadStates();
+
 </script>
 
 </body>
