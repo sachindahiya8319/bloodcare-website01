@@ -238,7 +238,53 @@ footer{
     border-radius:10px;
     box-shadow:0 4px 10px rgba(0,0,0,0.1);
     width:500px;
+}/* Registered Donors Grid */
+.donor-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    align-items: stretch;
 }
+
+.donor-grid .card {
+    width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Show More Button */
+.show-more-container {
+    text-align: center;
+    margin-top: 30px;
+}
+
+#showMoreBtn {
+    background: #ff1010;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#showMoreBtn:hover {
+    background: #cc0000;
+}
+
+/* Responsive Layout */
+@media (max-width: 900px) {
+    .donor-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 500px) {
+    .donor-grid {
+        grid-template-columns: 1fr;
+    }
+}
+    
 </style>
 
 <!-- About -->
@@ -330,7 +376,14 @@ footer{
 <!-- Registered Donors -->
 <section id="view-donors">
     <h2 class="section-title">Registered Donors</h2>
-    <div id="donorList" class="cards"></div>
+
+    <div id="donorList" class="donor-grid"></div>
+
+    <div class="show-more-container">
+        <button id="showMoreBtn" onclick="toggleDonors()">
+            Show More
+        </button>
+    </div>
 </section>
 
 <!-- Contact -->
@@ -391,27 +444,7 @@ async function registerDonor(e){
     document.querySelector("form").reset();
 }
 
-// Display All Donors
-async function displayDonors(){
-    let res = await fetch("http://localhost:5000/api/donors");
-    let donors = await res.json();
 
-    let donorList=document.getElementById("donorList");
-    donorList.innerHTML="";
-
-    donors.forEach(d=>{
-        donorList.innerHTML+=`
-        <div class="card">
-            <h3>${d.name}</h3>
-            <p><strong>Blood:</strong> ${d.blood}</p>
-            <p><strong>State:</strong> ${d.state}</p>
-            <p><strong>City:</strong> ${d.city}</p>
-            <p><strong>Mobile:</strong> ${d.mobile}</p>
-
-             <button class="delete-btn" onclick="deleteDonor('${d._id}')">Delete</button>
-        </div>`;
-    });
-}
 
 // Search Donor
 async function searchDonor() {
@@ -431,7 +464,74 @@ async function searchDonor() {
         donorList.innerHTML = "<p>No donors found.</p>";
         return;
     }
+// Registered Donors: Show 4 initially, then all
+let allDonors = [];
+let showAllDonors = false;
 
+async function displayDonors() {
+    try {
+        const res = await fetch(
+            "https://bloodcare-website01.onrender.com/api/donors"
+        );
+
+        if (!res.ok) {
+            throw new Error("Unable to load donors");
+        }
+
+        allDonors = await res.json();
+        showAllDonors = false;
+
+        renderDonors();
+    } catch (error) {
+        console.error("Error loading donors:", error);
+
+        document.getElementById("donorList").innerHTML =
+            "<p>Unable to load donors. Please try again later.</p>";
+    }
+}
+
+function renderDonors() {
+    const donorList = document.getElementById("donorList");
+    const showMoreBtn = document.getElementById("showMoreBtn");
+
+    donorList.innerHTML = "";
+
+    const visibleDonors = showAllDonors
+        ? allDonors
+        : allDonors.slice(0, 4);
+
+    visibleDonors.forEach(d => {
+        donorList.innerHTML += `
+            <div class="card">
+                <h3>${d.name ?? ""}</h3>
+                <p><strong>Blood:</strong> ${d.blood ?? ""}</p>
+                <p><strong>State:</strong> ${d.state ?? ""}</p>
+                <p><strong>City:</strong> ${d.city ?? ""}</p>
+                <p><strong>Mobile:</strong> ${d.mobile ?? ""}</p>
+
+                <button
+                    class="delete-btn"
+                    onclick="deleteDonor('${d._id}')">
+                    Delete
+                </button>
+            </div>
+        `;
+    });
+
+    if (allDonors.length > 4) {
+        showMoreBtn.style.display = "inline-block";
+        showMoreBtn.textContent = showAllDonors
+            ? "Show Less"
+            : "Show More";
+    } else {
+        showMoreBtn.style.display = "none";
+    }
+}
+
+function toggleDonors() {
+    showAllDonors = !showAllDonors;
+    renderDonors();
+}
     donors.forEach(d => {
         donorList.innerHTML += `
         <div class="card">
