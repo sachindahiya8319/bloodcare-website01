@@ -111,7 +111,7 @@ section{ padding:90px 8%; }
 .cards{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-    gap:20px;
+    gap: 20px;
 }
 .card{
     padding:25px;
@@ -134,6 +134,7 @@ right:10px;
 background:red;
 color:white;
 border:none;
+border-radius: 25px;
 padding:5px 10px;
 display:none;
 cursor:pointer;
@@ -211,7 +212,7 @@ footer{
 <!-- Stats -->
 <section>
     <h2 class="section-title">Our Impact</h2>
-    <div class="cards">
+    <div class="cards stats-cards">
         <div class="card">
             <h2 id="donorCount">0</h2>
             <p>Registered Donors</p>
@@ -220,24 +221,20 @@ footer{
     </div>
 </section>
 <style>
-.section-title{
-    text-align:center;
+/* Keep the impact/stat card centered without changing other card layouts */
+.stats-cards {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
 }
 
-.cards{
-    display:flex;
-    justify-content:center; /* horizontal center */
-    align-items:center;     /* vertical alignment */
-    margin-top:20px;
+.stats-cards .card {
+    text-align: center;
+    padding: 30px;
+    width: min(500px, 100%);
 }
 
-.card{
-    text-align:center;
-    padding:30px;
-    border-radius:10px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.1);
-    width:500px;
-}
 /* Registered Donors Grid */
 .donor-grid {
     display: grid;
@@ -252,6 +249,26 @@ footer{
     overflow-wrap: anywhere;
 }
 
+/* Search controls (they are not inside a form) */
+#searchBlood, #searchState, #searchCity {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: white;
+}
+
+#searchDonorBtn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    background: red;
+    color: white;
+    cursor: pointer;
+}
+
 /* Show More Button */
 .show-more-container {
     text-align: center;
@@ -259,6 +276,7 @@ footer{
 }
 
 #showMoreBtn {
+    display: none;
     background: #ff1010;
     color: white;
     border: none;
@@ -268,21 +286,20 @@ footer{
     cursor: pointer;
 }
 
-#showMoreBtn:hover {
+#showMoreBtn:hover, #searchDonorBtn:hover {
     background: #cc0000;
 }
 
-/* Responsive Layout */
 @media (max-width: 900px) {
-    .donor-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+    .donor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 500px) {
-    .donor-grid {
-        grid-template-columns: 1fr;
-    }
+    .donor-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 34px; }
+    nav { padding: 12px 4%; }
+    nav ul li { margin-left: 10px; }
+    nav ul li a { font-size: 12px; }
 }
 </style>
 
@@ -328,10 +345,10 @@ footer{
 <section id="donor">
     <h2 class="section-title">Become a Donor</h2>
     <form onsubmit="return registerDonor(event)">
-        <input type="text" placeholder="Full Name" required>
-        <input type="email" placeholder="Email Address" required>
-        <input type="text" placeholder="Mobile Number" required>
-        <select required>
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="email" id="email" placeholder="Email Address" required>
+        <input type="text" id="mobile" placeholder="Mobile Number" required>
+        <select id="blood" required>
             <option value="">Select Blood Group</option>
             <option>A+</option><option>A-</option>
             <option>B+</option><option>B-</option>
@@ -359,12 +376,20 @@ footer{
                 <option>O+</option><option>O-</option>
                 <option>AB+</option><option>AB-</option>
             </select>
-            <input type="text" id="searchCity" placeholder="Enter City">
-            <button onclick="searchDonor()">Search</button>
+            <select id="searchState">
+    <option value="">Select State</option>
+</select>
+
+<select id="searchCity">
+    <option value="">Select City</option>
+</select>
+           
+            <button id="searchDonorBtn" type="button" onclick="searchDonor()">Search</button>
         </div>
     </div>
 </section>
 
+<!-- Registered Donors -->
 <section id="view-donors">
     <h2 class="section-title">Registered Donors</h2>
 
@@ -403,96 +428,147 @@ footer{
 <!-- Scripts -->
 <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
 <script>
-AOS.init({ duration:1200 });
+// BloodCare frontend configuration
+const API_URL = "https://bloodcare-website01.onrender.com";
 
-function scrollToSection(){
-    document.getElementById("donor").scrollIntoView({behavior:"smooth"});
+if (window.AOS) {
+    AOS.init({ duration: 1200 });
 }
 
-// Register Donor (Backend)
-async function registerDonor(e){
-    e.preventDefault();
-
-    let inputs=document.querySelectorAll("input, select");
-
-    let donor={
-        name:inputs[0].value,
-        email:inputs[1].value,
-        mobile:inputs[2].value,
-        blood:inputs[3].value,
-        city:inputs[4].value
-    };
-
-    await fetch("http://localhost:5000/api/donor",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(donor)
-    });
-
-    alert("Donor Registered Successfully!");
-    displayDonors();
-    document.querySelector("form").reset();
-}
-
-// Registered Donors: Show 4 initially, then all
 let allDonors = [];
 let showAllDonors = false;
+let isShowingSearchResults = false;
+
+function scrollToSection() {
+    document.getElementById("donor").scrollIntoView({ behavior: "smooth" });
+}
+
+// Avoid inserting donor-provided text as executable HTML.
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    }[char]));
+}
+
+async function registerDonor(event) {
+    event.preventDefault();
+
+    const donor = {
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        mobile: document.getElementById("mobile").value.trim(),
+        blood: document.getElementById("blood").value,
+        state: document.getElementById("state").value,
+        city: document.getElementById("city").value
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/api/donor`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(donor)
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.message || result.error || "Donor registration failed.");
+        }
+
+        alert("Donor registered successfully!");
+        document.querySelector("#donor form")?.reset();
+        document.getElementById("city").innerHTML = '<option value="">Select City</option>';
+        await displayDonors();
+        await loadDonorCount();
+    } catch (error) {
+        console.error("Registration error:", error);
+        alert(`Unable to register donor: ${error.message}. Please try again.`);
+    }
+    return false;
+}
+
+async function searchDonor() {
+    const blood = document.getElementById("searchBlood").value;
+    const state = document.getElementById("searchState").value;
+    const city = document.getElementById("searchCity").value;
+    const params = new URLSearchParams();
+
+    if (blood) params.set("blood", blood);
+    if (state) params.set("state", state);
+    if (city) params.set("city", city);
+
+    try {
+        const response = await fetch(`${API_URL}/api/donor/search?${params.toString()}`);
+        if (!response.ok) throw new Error("Donor search request failed.");
+
+        const donors = await response.json();
+        if (!Array.isArray(donors)) throw new Error("Unexpected response from donor search API.");
+
+        allDonors = donors;
+        showAllDonors = false;
+        isShowingSearchResults = true;
+        renderDonors();
+        document.getElementById("view-donors").scrollIntoView({ behavior: "smooth" });
+    } catch (error) {
+        console.error("Search error:", error);
+        alert("Unable to search donors right now. Please check the backend and try again.");
+    }
+}
 
 async function displayDonors() {
     try {
-        const res = await fetch(
-            "https://bloodcare-website01.onrender.com/api/donors"
-        );
+        const response = await fetch(`${API_URL}/api/donors`);
+        if (!response.ok) throw new Error(`Unable to load donors (HTTP ${response.status}).`);
 
-        if (!res.ok) {
-            throw new Error("Unable to load donors");
-        }
+        const donors = await response.json();
+        if (!Array.isArray(donors)) throw new Error("Unexpected response from donors API.");
 
-        allDonors = await res.json();
+        allDonors = donors;
         showAllDonors = false;
-
+        isShowingSearchResults = false;
         renderDonors();
+        document.getElementById("donorCount").textContent = donors.length;
     } catch (error) {
         console.error("Error loading donors:", error);
-
         document.getElementById("donorList").innerHTML =
-            "<p>Unable to load donors. Please try again later.</p>";
+            '<p>Unable to load donors. Please refresh the page and try again.</p>';
+        document.getElementById("showMoreBtn").style.display = "none";
     }
 }
 
 function renderDonors() {
     const donorList = document.getElementById("donorList");
     const showMoreBtn = document.getElementById("showMoreBtn");
-
     donorList.innerHTML = "";
 
-    const visibleDonors = showAllDonors
-        ? allDonors
-        : allDonors.slice(0, 4);
+    if (allDonors.length === 0) {
+        donorList.innerHTML = `<p>${isShowingSearchResults ? "No donors found for the selected filters." : "No donors have registered yet."}</p>`;
+        showMoreBtn.style.display = "none";
+        return;
+    }
 
-    visibleDonors.forEach(d => {
-        donorList.innerHTML += `
-            <div class="card">
-                <h3>${d.name ?? ""}</h3>
-                <p><strong>Blood:</strong> ${d.blood ?? ""}</p>
-                <p><strong>State:</strong> ${d.state ?? ""}</p>
-                <p><strong>City:</strong> ${d.city ?? ""}</p>
-                <p><strong>Mobile:</strong> ${d.mobile ?? ""}</p>
-
-                <button
-                    class="delete-btn"
-                    onclick="deleteDonor('${d._id}')">
-                    Delete
-                </button>
-            </div>
+    const visibleDonors = showAllDonors ? allDonors : allDonors.slice(0, 4);
+    visibleDonors.forEach(donor => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+            <h3>${escapeHTML(donor.name)}</h3>
+            <p><strong>Blood:</strong> ${escapeHTML(donor.blood)}</p>
+            <p><strong>State:</strong> ${escapeHTML(donor.state)}</p>
+            <p><strong>City:</strong> ${escapeHTML(donor.city)}</p>
+            <p><strong>Mobile:</strong> ${escapeHTML(donor.mobile)}</p>
+            <button class="delete-btn" type="button">Delete</button>
         `;
+        card.querySelector(".delete-btn").addEventListener("click", () => deleteDonor(donor._id));
+        donorList.appendChild(card);
     });
 
     if (allDonors.length > 4) {
         showMoreBtn.style.display = "inline-block";
-        showMoreBtn.textContent = showAllDonors
-            ? "Show Less"
-            : "Show More";
+        showMoreBtn.textContent = showAllDonors ? "Show Less" : "Show More";
     } else {
         showMoreBtn.style.display = "none";
     }
@@ -503,122 +579,102 @@ function toggleDonors() {
     renderDonors();
 }
 
-// Search Donor
-async function searchDonor() {
-    let blood = document.getElementById("searchBlood").value;
-    let city = document.getElementById("searchCity").value;
-
-    // encode URL parameters (important for B+, A+ etc.)
-    let res = await fetch(`http://localhost:5000/api/donor/search?blood=${encodeURIComponent(blood)}&city=${encodeURIComponent(city)}`);
-    
-    let donors = await res.json();
-
-    let donorList = document.getElementById("donorList");
-    donorList.innerHTML = "";
-
-    if (donors.length === 0) {
-        donorList.innerHTML = "<p>No donors found.</p>";
-        return;
-    }
-
-    donors.forEach(d => {
-        donorList.innerHTML += `
-        <div class="card">
-            <h3>${d.name}</h3>
-            <p><strong>Blood:</strong> ${d.blood}</p>
-            <p><strong>City:</strong> ${d.city}</p>
-            <p><strong>Mobile:</strong> ${d.mobile}</p>
-        </div>`;
-    });
-}
-
-document.addEventListener("DOMContentLoaded",()=>{
-    displayDonors();
-});
 async function loadDonorCount() {
     try {
-        let res = await fetch("http://localhost:5000/api/donors");
-        let donors = await res.json();
-
-        document.getElementById("donorCount").innerText = donors.length;
+        const response = await fetch(`${API_URL}/api/donors`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const donors = await response.json();
+        if (Array.isArray(donors)) {
+            document.getElementById("donorCount").textContent = donors.length;
+        }
     } catch (error) {
-        console.log("Error loading donor count:", error);
+        console.error("Error loading donor count:", error);
     }
 }
 
 async function deleteDonor(id) {
+    if (!id || !confirm("Are you sure you want to delete this donor?")) return;
 
-    let confirmDelete = confirm("Are you sure you want to delete this donor?");
-
-    if(confirmDelete){
-        await fetch(`http://localhost:5000/api/donor/${id}`, {
+    try {
+        const response = await fetch(`${API_URL}/api/donor/${encodeURIComponent(id)}`, {
             method: "DELETE"
         });
+        if (!response.ok) throw new Error("Delete request failed.");
 
-        alert("Donor Deleted Successfully");
-
-        displayDonors();
-        loadDonorCount();
+        alert("Donor deleted successfully.");
+        await displayDonors();
+        await loadDonorCount();
+    } catch (error) {
+        console.error("Delete error:", error);
+        alert("Unable to delete this donor. Please try again.");
     }
 }
 
-// page load hote hi run karega
-window.onload = loadDonorCount;
+async function loadStatesInto(selectId) {
+    const dropdown = document.getElementById(selectId);
+    try {
+        dropdown.innerHTML = '<option value="">Loading states...</option>';
+        const response = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ country: "India" })
+        });
+        if (!response.ok) throw new Error("Could not load states.");
+        const result = await response.json();
+        const states = result?.data?.states;
+        if (!Array.isArray(states)) throw new Error("Invalid state list response.");
 
-// ✅ YAHAN ADD KARO (last me)
-async function loadStates() {
-    let res = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ country: "India" })
-    });
-
-    let data = await res.json();
-    let states = data.data.states;
-
-    let stateDropdown = document.getElementById("state");
-
-    states.forEach(s => {
-        let option = document.createElement("option");
-        option.value = s.name;
-        option.text = s.name;
-        stateDropdown.add(option);
-    });
+        dropdown.innerHTML = '<option value="">Select State</option>';
+        states.forEach(state => {
+            const option = document.createElement("option");
+            option.value = state.name;
+            option.textContent = state.name;
+            dropdown.appendChild(option);
+        });
+    } catch (error) {
+        console.error(`Error loading ${selectId}:`, error);
+        dropdown.innerHTML = '<option value="">States unavailable - refresh to retry</option>';
+    }
 }
 
-document.getElementById("state").addEventListener("change", loadCities);
+async function loadCities(stateSelectId, citySelectId) {
+    const state = document.getElementById(stateSelectId).value;
+    const cityDropdown = document.getElementById(citySelectId);
+    cityDropdown.innerHTML = '<option value="">Select City</option>';
+    if (!state) return;
 
-async function loadCities() {
-    let state = document.getElementById("state").value;
-    let cityDropdown = document.getElementById("city");
+    try {
+        cityDropdown.innerHTML = '<option value="">Loading cities...</option>';
+        const response = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ country: "India", state })
+        });
+        if (!response.ok) throw new Error("Could not load cities.");
+        const result = await response.json();
+        if (!Array.isArray(result?.data)) throw new Error("Invalid city list response.");
 
-    cityDropdown.innerHTML = "<option>Loading...</option>";
-
-    let res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            country: "India",
-            state: state
-        })
-    });
-
-    let data = await res.json();
-    let cities = data.data;
-
-    cityDropdown.innerHTML = "<option>Select City</option>";
-
-    cities.forEach(city => {
-        let option = document.createElement("option");
-        option.value = city;
-        option.text = city;
-        cityDropdown.add(option);
-    });
+        cityDropdown.innerHTML = '<option value="">Select City</option>';
+        result.data.forEach(city => {
+            const option = document.createElement("option");
+            option.value = city;
+            option.textContent = city;
+            cityDropdown.appendChild(option);
+        });
+    } catch (error) {
+        console.error(`Error loading cities for ${state}:`, error);
+        cityDropdown.innerHTML = '<option value="">Cities unavailable - try another state</option>';
+    }
 }
 
-// page load pe run hoga
-loadStates();
+// Initialize the page once all HTML elements exist.
+document.addEventListener("DOMContentLoaded", async () => {
+    document.getElementById("state").addEventListener("change", () => loadCities("state", "city"));
+    document.getElementById("searchState").addEventListener("change", () => loadCities("searchState", "searchCity"));
 
+    await Promise.all([loadStatesInto("state"), loadStatesInto("searchState")]);
+    await Promise.all([displayDonors(), loadDonorCount()]);
+});
 </script>
 
 </body>
